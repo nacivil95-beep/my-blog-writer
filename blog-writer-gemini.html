@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🥬 재료 블로그 자동 생성기 (Gemini)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1a2e;--paper:#faf8f3;--paper2:#f0ede4;--accent:#2e7d32;--accent2:#ef6c00;--accent-light:#e8f5e9;--border:#d8d0c0;--muted:#8b7d6b;--danger:#c62828;--blue:#1565c0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+.header{background:var(--ink);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,0.25)}
+.header-logo{font-family:'Noto Serif KR',serif;font-size:18px;color:#fff;font-weight:700}
+.header-logo span{color:#a5d6a7}
+.header-sub{font-size:11px;color:#666;margin-left:auto}
+.app{display:grid;grid-template-columns:272px 1fr;min-height:calc(100vh - 52px)}
+.sidebar{background:var(--paper2);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:calc(100vh - 52px);position:sticky;top:52px}
+.sidebar-title{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:0 8px 7px;border-bottom:1px solid var(--border);margin-bottom:3px}
+.step-btn{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:7px;border:none;background:transparent;cursor:pointer;text-align:left;width:100%;transition:all .15s;font-family:'Noto Sans KR',sans-serif}
+.step-btn:hover{background:#e8e3d8}
+.step-btn.active{background:var(--accent);color:white}
+.step-btn.active .step-num,.step-btn.active .step-sublabel{color:rgba(255,255,255,0.8)}
+.step-btn.active .step-num{background:rgba(255,255,255,0.2)}
+.step-btn.done .step-num{background:var(--accent);color:white}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;color:var(--muted)}
+.step-label{font-size:12px;font-weight:500;line-height:1.3}
+.step-sublabel{font-size:9.5px;color:var(--muted);margin-top:1px}
+.main{padding:24px 28px;overflow-y:auto;max-height:calc(100vh - 52px)}
+.panel{display:none}.panel.active{display:block}
+.panel-title{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;margin-bottom:5px}
+.panel-desc{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:20px}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+label{font-size:12px;font-weight:600;color:var(--ink)}
+label .req{color:var(--accent)}
+input[type=text],input[type=password],textarea,select{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:13px;background:white;color:var(--ink);outline:none;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:160px;font-size:12px;line-height:1.6}
+.color-options{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.color-opt{border:2px solid var(--border);border-radius:9px;padding:8px 3px;cursor:pointer;text-align:center;transition:all .15s;background:white}
+.color-opt:hover{border-color:#999}
+.color-opt.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+.color-swatch{width:28px;height:28px;border-radius:50%;margin:0 auto 5px;font-size:12px;display:flex;align-items:center;justify-content:center}
+.color-name{font-size:9px;color:var(--muted);line-height:1.3}
+.info-banner{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:9px;padding:12px 16px;margin-bottom:18px}
+.info-banner h3{font-size:12px;font-weight:700;color:#1b5e20;margin-bottom:6px}
+.info-banner p{font-size:11px;color:#2e7d32;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 18px;border-radius:7px;border:none;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:white}.btn-primary:hover{background:#1b5e20}.btn-primary:disabled{background:#aaa;cursor:not-allowed}
+.btn-secondary{background:white;color:var(--ink);border:1.5px solid var(--border)}.btn-secondary:hover{background:var(--paper2)}
+.btn-orange{background:var(--accent2);color:white}.btn-orange:hover{background:#e65100}
+.btn-blue{background:var(--blue);color:white}.btn-blue:hover{background:#0d47a1}
+.btn-danger{background:var(--danger);color:white}.btn-danger:hover{background:#b71c1c}
+.btn-sm{padding:5px 12px;font-size:11.5px;border-radius:6px}
+.btn-lg{padding:11px 26px;font-size:14px}
+.step-info-bar{background:var(--accent-light);border:1px solid #c8e6c9;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#2e7d32;line-height:1.6;display:none}
+.generate-area{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.progress-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:16px;overflow:hidden}
+.progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:white;border:1.5px solid var(--border);border-radius:9px;align-items:center}
+.toolbar-label{font-size:10.5px;font-weight:700;color:var(--muted);margin-right:4px}
+.toolbar-sep{width:1px;height:22px;background:var(--border);margin:0 4px}
+.result-box{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.result-header{background:var(--paper2);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
+.result-title{font-size:11.5px;font-weight:700;color:var(--muted)}
+.result-tabs{display:flex;gap:3px}
+.tab-btn{padding:3px 9px;border-radius:5px;border:1px solid var(--border);background:white;font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .1s}
+.tab-btn.active{background:var(--accent);color:white;border-color:var(--accent)}
+.result-content{background:white;min-height:100px;max-height:560px;overflow-y:auto}
+.preview-frame{width:100%;min-height:380px;border:none;display:block}
+.code-view{padding:12px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;overflow-x:auto;line-height:1.55;color:#333;background:#fafafa}
+.loading{display:flex;align-items:center;gap:10px;padding:20px 14px;color:var(--muted);font-size:12.5px}
+.spinner{width:17px;height:17px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{padding:10px 13px;border-radius:7px;font-size:12px;margin-bottom:12px;line-height:1.5}
+.alert-warn{background:#fff8e1;border-left:3px solid #f9a825;color:#6d4c00}
+.alert-success{background:#e8f5e9;border-left:3px solid #2e7d32;color:#1b5e20}
+.alert-error{background:#ffebee;border-left:3px solid #c62828;color:#7f0000}
+.alert-blue{background:#e3f2fd;border-left:3px solid #1565c0;color:#0d47a1}
+.compile-grid{display:grid;gap:7px;margin-bottom:18px}
+.compile-item{background:white;border:1.5px solid var(--border);border-radius:7px;padding:9px 13px;display:flex;align-items:center;justify-content:space-between}
+.compile-item.done{border-color:#c8e6c9;background:#f9fff9}
+.compile-item.missing{border-color:#ffcdd2;background:#fff9f9}
+.compile-label{font-size:12px;font-weight:500}
+.compile-status{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600}
+.compile-item.done .compile-status{background:#c8e6c9;color:#1b5e20}
+.compile-item.missing .compile-status{background:#ffcdd2;color:#b71c1c}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:14px;padding:24px;width:92%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);position:relative}
+.modal-title{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:700;margin-bottom:6px}
+.modal-desc{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:2px 6px;border-radius:4px}
+.modal-close:hover{background:var(--paper2)}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;flex-wrap:wrap}
+.edit-textarea{width:100%;min-height:300px;font-size:11.5px;font-family:'Courier New',monospace;line-height:1.5;border:1.5px solid var(--border);border-radius:8px;padding:12px;resize:vertical;color:#333}
+.edit-textarea:focus{border-color:var(--accent);outline:none}
+.img-drop{border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;margin-bottom:14px}
+.img-drop:hover,.img-drop.drag-over{border-color:var(--accent);background:var(--accent-light)}
+.img-drop input{display:none}
+.img-drop-icon{font-size:32px;margin-bottom:8px}
+.img-drop-text{font-size:12.5px;color:var(--muted)}
+.img-preview{max-width:100%;max-height:200px;border-radius:8px;margin-bottom:12px;display:none}
+.img-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pos-opt{border:1.5px solid var(--border);border-radius:8px;padding:8px;cursor:pointer;text-align:center;font-size:11.5px;background:white;transition:all .15s}
+.pos-opt:hover{border-color:var(--accent)}
+.pos-opt.selected{border-color:var(--accent);background:var(--accent-light);color:var(--accent);font-weight:600}
+.link-preview{background:var(--paper2);border-radius:8px;padding:10px 13px;font-size:11.5px;color:var(--muted);margin-top:10px;border:1px solid var(--border);word-break:break-all;display:none}
+.ask-result{background:#f9f9f9;border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:12px;font-size:12px;line-height:1.6;max-height:300px;overflow-y:auto;display:none;white-space:pre-wrap}
+.tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tag{background:var(--accent-light);color:var(--accent);font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;cursor:pointer;border:1px solid #c8e6c9}
+.tag:hover{background:var(--accent);color:white}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.form-row label{font-size:12px;font-weight:600}
+.form-note{font-size:10.5px;color:var(--muted);margin-top:3px}
+.pos-list-item:hover{background:var(--accent-light)!important;color:var(--accent)!important}
+.pos-list-item:last-child{border-bottom:none!important}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:white;padding:9px 20px;border-radius:30px;font-size:12.5px;font-weight:500;z-index:999;opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal" style="max-width:900px;width:96%">
+    <button class="modal-close" onclick="closeModal('edit')">✕</button>
+    <div class="modal-title">✏️ 섹션 HTML 직접 수정</div>
+    <div class="modal-desc">HTML을 직접 편집하거나, 다른 곳에서 가져온 참고 글을 붙여넣어 AI가 섹션을 다시 작성하게 할 수 있어요.</div>
+
+    <!-- 편집 + 미리보기 탭 -->
+    <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;width:fit-content">
+      <button id="edit-tab-code-btn" onclick="switchEditTab('code')" style="padding:6px 16px;border:none;background:#e8f5e9;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:#2e7d32;transition:.15s">📝 HTML 편집</button>
+      <button id="edit-tab-preview-btn" onclick="switchEditTab('preview')" style="padding:6px 16px;border:none;background:white;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border-left:1px solid var(--border);transition:.15s">👁 미리보기</button>
+    </div>
+
+    <div id="edit-tab-code" style="display:block">
+      <div class="form-row" style="margin-bottom:8px">
+        <textarea class="edit-textarea" id="edit-textarea" oninput="scheduleEditPreview()" style="min-height:260px"></textarea>
+      </div>
+    </div>
+    <div id="edit-tab-preview" style="display:none;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+      <iframe id="edit-preview-iframe" style="width:100%;height:380px;border:none;display:block;background:white"></iframe>
+    </div>
+
+    <!-- AI 참고 글 기반 수정 -->
+    <div style="border:1.5px solid #b3d4f5;border-radius:10px;padding:14px 16px;background:#f0f7ff;margin-bottom:4px">
+      <div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:4px">🤖 참고 글로 AI 재작성</div>
+      <div style="font-size:11.5px;color:#1976d2;margin-bottom:10px;line-height:1.5">다른 곳(블로그, 논문, 기사 등)에서 복사한 글을 아래에 붙여넣으세요.<br>AI가 그 내용을 참고해 현재 섹션을 더 정확하고 풍부하게 재작성해드려요.</div>
+      <div class="form-row" style="margin-bottom:8px">
+        <label style="color:#1565c0">📋 참고 글 붙여넣기</label>
+        <textarea id="edit-ref-text" style="min-height:100px;font-size:12px;line-height:1.6;border:1.5px solid #b3d4f5;border-radius:7px;padding:10px;resize:vertical;font-family:'Noto Sans KR',sans-serif;background:white" placeholder="여기에 참고할 글을 붙여넣으세요. (블로그, 뉴스, 논문 내용 등 무엇이든 OK)&#10;&#10;예) 여주는 혈당 조절에 효과적인 성분인 카란틴을 함유하고 있으며..."></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:8px">
+        <label style="color:#1565c0">✏️ 추가 지시 사항 (선택)</label>
+        <input type="text" id="edit-ask-input" placeholder="예) 이 내용을 반영해서 효능 부분을 더 구체적으로 보완해주세요" style="border-color:#b3d4f5" />
+      </div>
+      <button class="btn btn-blue btn-sm" id="edit-ask-btn" onclick="askAIEdit()">🤖 AI로 재작성하기</button>
+      <div class="loading" id="edit-loading" style="display:none;padding:8px 0"><div class="spinner"></div> AI가 참고 글을 바탕으로 재작성하고 있어요...</div>
+      <div class="ask-result" id="edit-ask-result" style="margin-top:8px"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('edit')">취소</button>
+      <button class="btn btn-orange" id="edit-apply-btn" onclick="applyAIEdit()" style="display:none">✅ AI 결과 적용</button>
+      <button class="btn btn-primary" onclick="saveEdit()">💾 저장 & 닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE MODAL -->
+<div class="modal-overlay" id="modal-image">
+  <div class="modal" style="max-width:740px">
+    <button class="modal-close" onclick="closeModal('image')">✕</button>
+    <div class="modal-title">🖼️ 이미지 삽입</div>
+    <div class="modal-desc">이미지를 업로드하거나 URL을 입력하고, 섹션 안의 원하는 위치에 삽입해요.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <div>
+        <div class="form-row">
+          <label>이미지 소스</label>
+          <div class="img-drop" id="img-drop" onclick="document.getElementById('img-file').click()" ondragover="imgDragOver(event)" ondrop="imgDrop(event)">
+            <input type="file" id="img-file" accept="image/*" onchange="imgFileChange(event)" />
+            <div class="img-drop-icon">📁</div>
+            <div class="img-drop-text">클릭하거나 드래그<br><span style="font-size:10px;color:#bbb">JPG PNG GIF WebP</span></div>
+          </div>
+          <img id="img-preview" class="img-preview" alt="미리보기" style="max-height:120px" />
+          <div style="display:flex;align-items:center;gap:6px;margin:4px 0 6px">
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+            <span style="font-size:10px;color:var(--muted)">또는 URL 입력</span>
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+          </div>
+          <input type="text" id="img-url" placeholder="https://example.com/image.jpg" oninput="imgUrlPreview()" />
+        </div>
+        <div class="form-row"><label>ALT 텍스트</label><input type="text" id="img-alt" placeholder="예) 신선한 원물 사진" oninput="updateImgInsertPreview()" /></div>
+        <div class="form-row"><label>이미지 캡션 (선택)</label><input type="text" id="img-caption" placeholder="예) ▲ 국내 재배 신선한 재료" oninput="updateImgInsertPreview()" /></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="form-row" style="margin-bottom:0"><label>정렬</label><select id="img-align" onchange="updateImgInsertPreview()"><option value="center">가운데</option><option value="left">왼쪽</option><option value="right">오른쪽</option></select></div>
+          <div class="form-row" style="margin-bottom:0"><label>최대 너비</label><select id="img-width" onchange="updateImgInsertPreview()"><option value="100%">100%</option><option value="80%">80%</option><option value="60%">60%</option><option value="400px">400px</option><option value="300px">300px</option></select></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">📍 삽입 위치 선택</label>
+          <div id="img-pos-list" style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto;background:white">
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">섹션을 열면 자동으로 목록이 나타나요</div>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">👁 선택 위치 컨텍스트</label>
+          <div id="img-pos-context" style="border:1.5px solid var(--border);border-radius:8px;padding:10px;background:#fafafa;min-height:72px;max-height:120px;overflow-y:auto;font-size:10.5px;font-family:monospace;color:#555;white-space:pre-wrap;line-height:1.5">위치를 선택하면 해당 요소 전후 코드가 표시돼요</div>
+        </div>
+      </div>
+    </div>
+    <!-- 삽입 결과 미리보기 -->
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:12px;font-weight:600">👁 삽입 결과 미리보기</label>
+        <div style="display:flex;gap:3px">
+          <button id="img-prev-tab-simple" onclick="switchImgPreviewTab('simple')" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:#2e7d32;color:white;font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">🖼 이미지만</button>
+          <button id="img-prev-tab-full" onclick="switchImgPreviewTab('full')" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:white;color:var(--muted);font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">📄 섹션 전체</button>
+        </div>
+      </div>
+      <!-- 이미지만 미리보기 -->
+      <div id="img-prev-simple" style="border:1.5px solid var(--border);border-radius:8px;background:#fafafa;min-height:80px;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden">
+        <span style="font-size:11.5px;color:var(--muted)">이미지를 선택하면 미리보기가 나타나요</span>
+      </div>
+      <!-- 섹션 전체 미리보기 (iframe) -->
+      <div id="img-prev-full" style="display:none;border:1.5px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="background:#f5f5f5;padding:6px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">섹션에 이미지가 삽입된 모습을 미리 볼 수 있어요 (실제 저장 전)</div>
+        <iframe id="img-section-preview-iframe" style="width:100%;height:380px;border:none;display:block;background:white"></iframe>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('image')">취소</button>
+      <button class="btn btn-primary" onclick="insertImage()">🖼️ 이미지 삽입하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINK MODAL -->
+<div class="modal-overlay" id="modal-link">
+  <div class="modal" style="max-width:680px">
+    <button class="modal-close" onclick="closeModal('link')">✕</button>
+    <div class="modal-title">🔗 링크 삽입</div>
+    <div class="modal-desc">다양한 버튼 스타일을 선택해서 원하는 위치에 링크를 삽입해요.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div class="form-row">
+          <label>링크 URL <span class="req">*</span></label>
+          <input type="text" id="link-url" placeholder="https://..." oninput="updateLinkPreview()" />
+        </div>
+        <div class="form-row">
+          <label>빠른 템플릿</label>
+          <div class="tag-row" style="margin-top:0">
+            <span class="tag" onclick="quickLink('농촌진흥청 영양 정보 보기','https://www.rda.go.kr')">농촌진흥청</span>
+            <span class="tag" onclick="quickLink('식품안전나라에서 확인하기','https://www.foodsafetykorea.go.kr')">식품안전나라</span>
+            <span class="tag" onclick="quickLink('쿠팡에서 구매하기','https://www.coupang.com')">쿠팡</span>
+            <span class="tag" onclick="quickLink('네이버쇼핑에서 보기','https://shopping.naver.com')">네이버쇼핑</span>
+            <span class="tag" onclick="quickLink('관련 레시피 더 보기','https://www.10000recipe.com')">만개의레시피</span>
+            <span class="tag" onclick="quickLink('유튜브에서 영상 보기','https://www.youtube.com')">유튜브</span>
+          </div>
+        </div>
+        <div class="form-row"><label>새 탭 열기</label><select id="link-target"><option value="_blank">새 탭에서 열기 (권장)</option><option value="_self">현재 탭에서 열기</option></select></div>
+        <div class="form-row">
+          <label>링크 텍스트 <span class="req">*</span></label>
+          <input type="text" id="link-text" placeholder="예) 📋 지금 구매하기" oninput="updateLinkPreview()" />
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>아이콘 (선택)</label>
+          <div class="tag-row" style="margin-top:0">
+            <span class="tag" onclick="addLinkIcon('🛒')">🛒</span><span class="tag" onclick="addLinkIcon('📋')">📋</span><span class="tag" onclick="addLinkIcon('🔗')">🔗</span><span class="tag" onclick="addLinkIcon('👆')">👆</span><span class="tag" onclick="addLinkIcon('✅')">✅</span><span class="tag" onclick="addLinkIcon('📌')">📌</span><span class="tag" onclick="addLinkIcon('💊')">💊</span><span class="tag" onclick="addLinkIcon('🌿')">🌿</span><span class="tag" onclick="addLinkIcon('💰')">💰</span><span class="tag" onclick="addLinkIcon('⬆')">⬆</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="form-row">
+          <label>버튼 스타일 선택</label>
+          <div id="link-style-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:6px">
+          <label>📍 삽입 위치</label>
+          <div id="link-pos-list" style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;max-height:160px;overflow-y:auto;background:white">
+            <div style="padding:12px;text-align:center;color:var(--muted);font-size:12px">섹션을 열면 자동으로 목록이 나타나요</div>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>👁 선택 위치 컨텍스트</label>
+          <div id="link-pos-context" style="border:1.5px solid var(--border);border-radius:8px;padding:8px;background:#fafafa;min-height:48px;max-height:90px;overflow-y:auto;font-size:10px;font-family:monospace;color:#555;white-space:pre-wrap;line-height:1.5">위치를 선택하면 해당 요소 전후 코드가 표시돼요</div>
+        </div>
+      </div>
+    </div>
+    <!-- 섹션 전체 미리보기 -->
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:12px;font-weight:600">👁 삽입 결과 미리보기</label>
+        <div style="display:flex;gap:3px">
+          <button id="link-prev-tab-simple" onclick="switchLinkPreviewTab('simple')" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:#1565c0;color:white;font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">🔗 링크만</button>
+          <button id="link-prev-tab-full" onclick="switchLinkPreviewTab('full')" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:white;color:var(--muted);font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">📄 섹션 전체</button>
+        </div>
+      </div>
+      <div id="link-prev-simple-wrap" style="display:block">
+        <div id="link-preview" style="background:white;border:1.5px solid var(--border);border-radius:8px;padding:14px;min-height:52px;display:flex;align-items:center;justify-content:center">
+          <span style="font-size:11px;color:var(--muted)">텍스트와 URL을 입력하면 미리보기가 나타나요</span>
+        </div>
+      </div>
+      <div id="link-prev-full-wrap" style="display:none;border:1.5px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="background:#f5f5f5;padding:6px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">섹션에 링크가 삽입된 모습을 미리 볼 수 있어요 (실제 저장 전)</div>
+        <iframe id="link-section-preview-iframe" style="width:100%;height:320px;border:none;display:block;background:white"></iframe>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('link')">취소</button>
+      <button class="btn btn-primary" onclick="insertLink()">🔗 링크 삽입하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- HTML 코드 삽입 MODAL -->
+<div class="modal-overlay" id="modal-htmlsnippet">
+  <div class="modal" style="max-width:820px;width:96%">
+    <button class="modal-close" onclick="closeModal('htmlsnippet')">✕</button>
+    <div class="modal-title">🧩 HTML 코드 직접 삽입</div>
+    <div class="modal-desc">직접 만든 HTML 코드를 원하는 위치에 삽입해요. 광고 배너, 제품 카드, 커스텀 박스 등 무엇이든 넣을 수 있어요.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row" style="margin-bottom:0">
+          <label>📝 붙여넣을 HTML 코드 <span class="req">*</span></label>
+          <textarea id="snippet-code" style="min-height:180px;font-size:11.5px;font-family:'Courier New',monospace;line-height:1.5;border:1.5px solid var(--border);border-radius:8px;padding:10px;resize:vertical;color:#333;background:#fafafa" placeholder="예) &lt;div style=&quot;...&quot;&gt;내용&lt;/div&gt;" oninput="updateSnippetPreview()"></textarea>
+        </div>
+        <div>
+          <label style="font-size:11.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">⚡ 빠른 템플릿</label>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            <span class="tag" onclick="applySnippetTemplate('tip')">💡 팁박스</span>
+            <span class="tag" onclick="applySnippetTemplate('warn')">⚠️ 경고박스</span>
+            <span class="tag" onclick="applySnippetTemplate('product')">🛒 제품카드</span>
+            <span class="tag" onclick="applySnippetTemplate('divider')">✂️ 구분선</span>
+            <span class="tag" onclick="applySnippetTemplate('notice')">📢 공지배너</span>
+            <span class="tag" onclick="applySnippetTemplate('table2')">📊 2열 표</span>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">📍 삽입 위치</label>
+          <div id="snippet-pos-list" style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;max-height:160px;overflow-y:auto;background:white">
+            <div style="padding:12px;text-align:center;color:var(--muted);font-size:12px">섹션을 열면 자동으로 목록이 나타나요</div>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">👁 선택 위치 컨텍스트</label>
+          <div id="snippet-pos-context" style="border:1.5px solid var(--border);border-radius:8px;padding:8px;background:#fafafa;min-height:44px;max-height:80px;overflow-y:auto;font-size:10px;font-family:monospace;color:#555;white-space:pre-wrap;line-height:1.5">위치를 선택하면 해당 요소 전후 코드가 표시돼요</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <label style="font-size:12px;font-weight:600">👁 미리보기</label>
+          <div style="display:flex;gap:3px">
+            <button id="snip-prev-tab-code" onclick="switchSnipPreviewTab('code')" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:#2e7d32;color:white;font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">🧩 코드만</button>
+            <button id="snip-prev-tab-full" onclick="switchSnipPreviewTab('full')" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:white;color:var(--muted);font-size:10.5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif">📄 섹션 전체</button>
+          </div>
+        </div>
+        <div id="snip-prev-code" style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;min-height:380px">
+          <iframe id="snip-code-iframe" style="width:100%;height:380px;border:none;display:block;background:white"></iframe>
+        </div>
+        <div id="snip-prev-full" style="display:none;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;min-height:380px">
+          <div style="background:#f5f5f5;padding:6px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">섹션에 삽입된 최종 모습 (저장 전 미리보기)</div>
+          <iframe id="snip-full-iframe" style="width:100%;height:374px;border:none;display:block;background:white"></iframe>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('htmlsnippet')">취소</button>
+      <button class="btn btn-primary" onclick="insertSnippet()">🧩 코드 삽입하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">🥬 <span>재료</span>블로그 생성기</div>
+  <div class="header-sub">50대+ 건강 재료 정보 블로그 자동화 · Gemini 2.0 검색 연동</div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-title">진행 단계</div>
+    <button class="step-btn active" onclick="goPanel('setup')" id="sb-setup"><div class="step-num">⚙</div><div><div class="step-label">기본 설정</div><div class="step-sublabel">재료명·키워드·컬러</div></div></button>
+    <button class="step-btn" onclick="goPanel('step1')" id="sb-step1"><div class="step-num">1</div><div><div class="step-label">메타·도입부·목차</div><div class="step-sublabel">STEP 1</div></div></button>
+    <button class="step-btn" onclick="goPanel('step2')" id="sb-step2"><div class="step-num">2</div><div><div class="step-label">재료 소개</div><div class="step-sublabel">STEP 2 — 섹션 1</div></div></button>
+    <button class="step-btn" onclick="goPanel('step3')" id="sb-step3"><div class="step-num">3</div><div><div class="step-label">영양 성분과 효능</div><div class="step-sublabel">STEP 3 — 섹션 2</div></div></button>
+    <button class="step-btn" onclick="goPanel('step4')" id="sb-step4"><div class="step-num">4</div><div><div class="step-label">추천 대상</div><div class="step-sublabel">STEP 4 — 섹션 3</div></div></button>
+    <button class="step-btn" onclick="goPanel('step5')" id="sb-step5"><div class="step-num">5</div><div><div class="step-label">부작용·주의사항</div><div class="step-sublabel">STEP 5 — 섹션 4</div></div></button>
+    <button class="step-btn" onclick="goPanel('step6')" id="sb-step6"><div class="step-num">6</div><div><div class="step-label">제철·고르는법·보관</div><div class="step-sublabel">STEP 6 — 섹션 5</div></div></button>
+    <button class="step-btn" onclick="goPanel('step7')" id="sb-step7"><div class="step-num">7</div><div><div class="step-label">맛있게 먹는 법</div><div class="step-sublabel">STEP 7 — 섹션 6</div></div></button>
+    <button class="step-btn" onclick="goPanel('step8')" id="sb-step8"><div class="step-num">8</div><div><div class="step-label">구입처·가격 정보</div><div class="step-sublabel">STEP 8 — 섹션 7</div></div></button>
+    <button class="step-btn" onclick="goPanel('step9')" id="sb-step9"><div class="step-num">9</div><div><div class="step-label">FAQ·요약·마무리</div><div class="step-sublabel">STEP 9 — 완성</div></div></button>
+    <button class="step-btn" onclick="goPanel('compile');updateCompileChecklist()" id="sb-compile"><div class="step-num">✓</div><div><div class="step-label">최종 완성본</div><div class="step-sublabel">전체 HTML 합치기</div></div></button>
+  </aside>
+
+  <main class="main">
+    <!-- 기본 설정 -->
+    <div class="panel active" id="panel-setup">
+      <div class="panel-title">⚙️ 기본 설정</div>
+      <div class="panel-desc">글 작성에 필요한 정보를 먼저 입력해주세요. 한 번만 설정하면 모든 STEP에 자동 적용돼요.</div>
+      <div class="info-banner" style="background:#e8f0fe;border-color:#a8c4f8">
+        <h3 style="color:#1a56cc">🔑 Google Gemini API 키가 필요해요</h3>
+        <p style="color:#1565c0">Gemini API 키를 입력하면 인터넷 검색 기반으로 최신 정보를 반영한 블로그 글을 생성할 수 있어요.<br>
+        API 키는 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1a56cc;font-weight:700">Google AI Studio</a>에서 무료로 발급받을 수 있어요.</p>
+      </div>
+      <div class="config-grid" style="margin-bottom:8px">
+        <div class="field full">
+          <label>Gemini API 키 <span class="req">*</span></label>
+          <input type="password" id="gemini-api-key" placeholder="AIzaSy..." autocomplete="off" />
+          <div class="form-note">입력한 키는 이 페이지에서만 사용되며, 어디에도 저장·전송되지 않아요.</div>
+        </div>
+      </div>
+      <div class="config-grid">
+        <div class="field">
+          <label>재료명 <span class="req">*</span></label>
+          <input type="text" id="ingredient" placeholder="예) 여주, 흑마늘, 돼지감자" />
+        </div>
+        <div class="field">
+          <label>포커스 키워드 (SEO) <span class="req">*</span></label>
+          <input type="text" id="keyword" placeholder="예) 여주 효능, 흑마늘 부작용" />
+        </div>
+        <div class="field full">
+          <label>컬러 테마 선택 <span class="req">*</span></label>
+          <div class="color-options">
+            <div class="color-opt" onclick="selectColor(1)" id="color1"><div class="color-swatch" style="background:linear-gradient(135deg,#1a73e8,#607d8b)">🔵</div><div class="color-name">블루-그레이<br>신뢰·정보</div></div>
+            <div class="color-opt selected" onclick="selectColor(2)" id="color2"><div class="color-swatch" style="background:linear-gradient(135deg,#2e7d32,#ef6c00)">🟢</div><div class="color-name">그린-오렌지<br>자연·건강</div></div>
+            <div class="color-opt" onclick="selectColor(3)" id="color3"><div class="color-swatch" style="background:linear-gradient(135deg,#6a1b9a,#f9a825)">🟣</div><div class="color-name">퍼플-옐로우<br>한방·약재</div></div>
+            <div class="color-opt" onclick="selectColor(4)" id="color4"><div class="color-swatch" style="background:linear-gradient(135deg,#00695c,#b0bec5)">🟦</div><div class="color-name">틸-그레이<br>차분·현대</div></div>
+            <div class="color-opt" onclick="selectColor(5)" id="color5"><div class="color-swatch" style="background:linear-gradient(135deg,#bf360c,#cfd8dc)">🟤</div><div class="color-name">테라코타<br>전통·발효</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="saveConfig()">설정 저장 후 STEP 1 시작하기 →</button>
+      <div id="config-alert" style="margin-top:12px"></div>
+    </div>
+
+    <div id="step-panels"></div>
+
+    <!-- 최종 완성본 -->
+    <div class="panel" id="panel-compile">
+      <div class="panel-title">✅ 최종 완성본</div>
+      <div class="panel-desc">STEP 1~9 결과물을 하나의 HTML로 합쳐 다운로드하거나 복사할 수 있어요.</div>
+      <div class="compile-grid" id="compile-checklist"></div>
+      <div class="generate-area">
+        <button class="btn btn-primary btn-lg" onclick="compileAll()">🔗 전체 HTML 합치기</button>
+        <button class="btn btn-secondary" onclick="downloadAll()">⬇️ HTML 파일 다운로드</button>
+      </div>
+      <div id="compile-result"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS & STATE
+// ============================================================
+const COLORS = {
+  1:{main:'#1a73e8',sub:'#607d8b',name:'블루-그레이'},
+  2:{main:'#2e7d32',sub:'#ef6c00',name:'그린-오렌지'},
+  3:{main:'#6a1b9a',sub:'#f9a825',name:'퍼플-옐로우'},
+  4:{main:'#00695c',sub:'#b0bec5',name:'틸-라이트그레이'},
+  5:{main:'#bf360c',sub:'#cfd8dc',name:'테라코타-라이트그레이'}
+};
+
+const STEPS = [
+  {id:'step1', title:'메타·도입부·목차', emoji:'📋'},
+  {id:'step2', title:'재료 소개', emoji:'🌿'},
+  {id:'step3', title:'영양 성분과 효능', emoji:'💊'},
+  {id:'step4', title:'추천 대상', emoji:'👥'},
+  {id:'step5', title:'부작용·주의사항', emoji:'⚠️'},
+  {id:'step6', title:'제철·고르는법·보관', emoji:'🛒'},
+  {id:'step7', title:'맛있게 먹는 법', emoji:'🍳'},
+  {id:'step8', title:'구입처·가격 정보', emoji:'💰'},
+  {id:'step9', title:'FAQ·요약·마무리', emoji:'❓'},
+];
+
+let config = {};
+let selectedColor = 2;
+let results = {};
+let htmlResults = {};
+let currentEditStep = null;
+let currentImageStep = null;
+let currentLinkStep = null;
+let aiEditResult = null;
+let imgBase64 = null;
+let selectedLinkStyle = 'solid';
+
+// ============================================================
+// INIT STEP PANELS
+// ============================================================
+function initStepPanels() {
+  const container = document.getElementById('step-panels');
+  container.innerHTML = STEPS.map(s => `
+    <div class="panel" id="panel-${s.id}">
+      <div class="panel-title">${s.emoji} ${s.title}</div>
+      <div class="panel-desc" id="desc-${s.id}">설정을 먼저 저장해주세요.</div>
+      <div class="step-info-bar" id="info-${s.id}"></div>
+      <div class="generate-area" id="genarea-${s.id}">
+        <button class="btn btn-primary btn-lg" id="genbtn-${s.id}" onclick="generateStep('${s.id}')">🤖 AI로 생성하기</button>
+        <button class="btn btn-secondary btn-sm" id="regenbtn-${s.id}" onclick="regenerateStep('${s.id}')" style="display:none">🔄 다시 생성</button>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="prog-${s.id}" style="width:0%"></div></div>
+      <div id="result-${s.id}"></div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('panel-'+id);
+  const btn = document.getElementById('sb-'+id);
+  if(panel) panel.classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+// ============================================================
+// COLOR SELECT
+// ============================================================
+function selectColor(n) {
+  selectedColor = n;
+  document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('selected'));
+  document.getElementById('color'+n).classList.add('selected');
+}
+
+// ============================================================
+// SAVE CONFIG
+// ============================================================
+function saveConfig() {
+  const ingredient = document.getElementById('ingredient').value.trim();
+  const keyword = document.getElementById('keyword').value.trim();
+  const geminiKey = document.getElementById('gemini-api-key').value.trim();
+  const alertEl = document.getElementById('config-alert');
+  if(!ingredient) { alertEl.innerHTML='<div class="alert alert-error">❌ 재료명을 입력해주세요.</div>'; return; }
+  if(!keyword) { alertEl.innerHTML='<div class="alert alert-error">❌ 포커스 키워드를 입력해주세요.</div>'; return; }
+  if(!geminiKey) { alertEl.innerHTML='<div class="alert alert-error">❌ Gemini API 키를 입력해주세요.</div>'; return; }
+  config = {ingredient, keyword, colorNum: selectedColor, geminiKey};
+  alertEl.innerHTML='<div class="alert alert-success">✅ 설정 저장 완료! STEP 1로 이동해요.</div>';
+  STEPS.forEach(s => {
+    const info = document.getElementById('info-'+s.id);
+    const desc = document.getElementById('desc-'+s.id);
+    if(info) { info.innerHTML=`📌 재료명: <strong>${ingredient}</strong> &nbsp;|&nbsp; 🔑 키워드: <strong>${keyword}</strong> &nbsp;|&nbsp; 🎨 컬러: <strong>${COLORS[selectedColor].name}</strong>`; info.style.display='block'; }
+    if(desc) desc.textContent=`${ingredient}에 대한 ${s.title} 섹션을 AI로 생성해요.`;
+  });
+  setTimeout(() => goPanel('step1'), 700);
+}
+
+// ============================================================
+// PROMPTS
+// ============================================================
+function getSystemPrompt() {
+  const c = COLORS[config.colorNum];
+  return `당신은 50대 이상 중년 독자를 위한 재료 정보 블로그 전문 작가입니다.
+
+현재 설정:
+- 재료명: ${config.ingredient}
+- 포커스 키워드: ${config.keyword}
+- 메인 컬러: ${c.main} / 보조 컬러: ${c.sub}
+
+공통 원칙:
+① 문체·톤: 친근한 대화체("~이에요","~해요"), 1인칭 시점, 전문용어 괄호 풀이 필수, 단정·과장 금지
+② 정확성: 출처 불명 수치 금지, 불확실하면 범위값 또는 "공식 자료 확인" 표기
+③ 출력: HTML은 반드시 \`\`\`html ... \`\`\` 코드 블록으로만 출력
+
+HTML 공통 구조:
+- 래퍼: <div style="font-family:'Noto Sans KR',sans-serif;line-height:1.6;max-width:800px;margin:0 auto;font-size:16px;">
+- H2: <h2 id="sectionN" style="font-size:22px;color:${c.main};margin:56px 0 16px;padding-bottom:10px;border-bottom:2px solid #eaeaea;">
+- H3: <h3 style="font-size:18px;color:#444;margin:36px 0 12px;padding-left:4px;border-left:3px solid ${c.main};">
+- 팁박스: background-color:${c.sub}22;border-left:4px solid ${c.main};padding:14px;border-radius:0 8px 8px 0;
+- 경고박스: background-color:#ffebee;border-left:4px solid #f44336;padding:14px;border-radius:0 8px 8px 0;`;
+}
+
+function getStepPrompt(stepId) {
+  const i = config.ingredient, k = config.keyword, c = COLORS[config.colorNum];
+  const p = {
+    step1:`STEP 1: 섹션 본문은 쓰지 말고 아래 4가지만 작성하세요.
+1) HTML 주석 메타디스크립션(150자이내,${k}포함)
+2) 메타설명박스(div,#fef9e7배경,${k}포함질문형태)
+3) 도입부(p태그2~3개,공감경험으로시작,첫문장에${k}포함,이모티콘활용)
+4) 목차TOC(nav+ol,href="#sectionN",아래8개제목그대로)
+   1.${i}이란 무엇인가요? 🌿 / 2.${i}의 영양 성분과 효능 💊 / 3.이런 분들께 특히 좋아요 👥 / 4.부작용과 주의사항 ⚠️ / 5.제철과 고르는 법, 보관하는 법 🛒 / 6.${i} 맛있게 먹는 법과 활용 요리 🍳 / 7.구입처와 가격 정보, 이렇게 활용하세요 💰 / 8.자주 묻는 질문 ❓
+메인컬러:${c.main}`,
+    step2:`STEP 2 — 섹션1만: "${i}이란 무엇인가요? 🌿" (id="section1")
+H3 3개이상(1-1.정의·식물학적특징/1-2.원산지·재배·유통/1-3.이름유래·역사·한의학)
+필수: ①재료기본정보표(학명/분류·원산지·제철·주산지·칼로리100g) ②역사일화 팁박스 ③${k} 2~3회`,
+    step3:`STEP 3 — 섹션2만: "${i}의 영양 성분과 효능 💊" (id="section2")
+H3 3개이상(2-1.주요영양성분/2-2.건강효능/2-3.과학적연구·한의학)
+필수: ①영양성분표(100g기준·출처·연도) ②팁박스"이 성분은 어떻게 작용하나요?" ③질환치료단정금지, ${k}2~3회`,
+    step4:`STEP 4 — 섹션3만: "이런 분들께 특히 좋아요 👥" (id="section3")
+H3 3개이상(3-1.나이성별별/3-2.건강상태별/3-3.생활습관별)
+필수: ①이모티콘+추천대상 박스 ②공감경험담1개, ${k}1~2회`,
+    step5:`STEP 5 — 섹션4만: "부작용과 주의사항 ⚠️" (id="section4")
+H3 3개이상(4-1.과다섭취증상·적정량/4-2.질환자·약물상호작용/4-3.알레르기·체질)
+필수: ①경고박스(#fff8e1배경·주황border·주의대상목록) ②과다섭취증상ul ③적정섭취량팁박스(출처·연도), ${k}1~2회`,
+    step6:`STEP 6 — 섹션5만: "제철과 고르는 법, 보관하는 법 🛒" (id="section5")
+H3 3개이상(5-1.제철·산지/5-2.고르는법/5-3.보관법·유통기한)
+필수: ①월별제철정보표 ②잘못된보관경고박스 ③오래보관꿀팁박스, ${k}2회`,
+    step7:`STEP 7 — 섹션6만: "${i} 맛있게 먹는 법과 활용 요리 🍳" (id="section6")
+H3 3개이상(6-1.기본손질·전처리/6-2.대표레시피2~3가지/6-3.재료궁합)
+필수: ①레시피박스2~3개(재료·조리법·요리포인트·난이도⭐) ②궁합표(✅좋은궁합/❌피해야할궁합/이유) ③필자요리경험담, ${k}2~3회`,
+    step8:`STEP 8 — 섹션7만: "구입처와 가격 정보, 이렇게 활용하세요 💰" (id="section7")
+H3 3개이상(7-1.구입처비교/7-2.가격대·선택기준/7-3.가공품주의)
+필수: ①구입처비교표(전통시장·마트·온라인,구입처/가격대/장점/단점) ②빨간border주의박스"이런 제품은 피하세요" ③가성비팁박스, ${k}1~2회`,
+    step9:`STEP 9 — 마지막, 아래 모두 작성하세요.
+【섹션8: 자주 묻는 질문 ❓】id="section8" Q&A 5개이상(기초·오해해소·실용질문)
+【핵심요약카드】border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,0.06) 카드, "한눈에 보는 핵심 요약" 헤더(메인컬러:${c.main}), 핵심5가지ul
+【마무리】①독자응원+댓글유도 ②면책조항(font-size:14px;color:#888)
+포커스키워드:${k}`,
+  };
+  return p[stepId] || '';
+}
+
+// ============================================================
+// GEMINI API CALL (Google Gemini 2.0 Flash with Search Grounding)
+// ============================================================
+async function callGemini(system, user, maxTokens=8000) {
+  const apiKey = config.geminiKey;
+  if(!apiKey) throw new Error('Gemini API 키가 설정되지 않았어요. 기본 설정에서 API 키를 입력해주세요.');
+  const model = 'gemini-2.0-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const body = {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: 'user', parts: [{ text: user }] }],
+    tools: [{ googleSearch: {} }],
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7
+    }
+  };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if(!response.ok) {
+    const e = await response.json().catch(()=>({}));
+    const msg = e.error?.message || `API 오류 (${response.status})`;
+    throw new Error(msg);
+  }
+  const data = await response.json();
+  const candidate = data.candidates?.[0];
+  if(!candidate) throw new Error('응답이 비어있어요. API 키나 모델 설정을 확인해주세요.');
+  const parts = candidate.content?.parts || [];
+  return parts.map(p => p.text || '').join('\n');
+}
+
+// 하위 호환: callClaude -> callGemini
+async function callClaude(system, user, maxTokens=8000) {
+  return callGemini(system, user, maxTokens);
+}
+
+function extractHTML(rawText) {
+  const m = rawText.match(/```html\s*([\s\S]*?)```/i);
+  return m ? m[1].trim() : '';
+}
+
+// ============================================================
+// GENERATE STEP
+// ============================================================
+async function generateStep(stepId) {
+  if(!config.ingredient) { alert('먼저 기본 설정에서 재료명을 입력해주세요!'); goPanel('setup'); return; }
+  const resultEl = document.getElementById('result-'+stepId);
+  const progEl = document.getElementById('prog-'+stepId);
+  const btnEl = document.getElementById('genbtn-'+stepId);
+  const regenBtn = document.getElementById('regenbtn-'+stepId);
+  resultEl.innerHTML = '<div class="loading"><div class="spinner"></div> AI가 글을 생성하고 있어요... 잠시만 기다려주세요 ✨</div>';
+  progEl.style.width = '20%';
+  btnEl.disabled = true;
+  if(regenBtn) regenBtn.style.display = 'none';
+  try {
+    progEl.style.width = '50%';
+    const rawText = await callClaude(getSystemPrompt(), getStepPrompt(stepId), 8000);
+    progEl.style.width = '100%';
+    results[stepId] = rawText;
+    const htmlCode = extractHTML(rawText);
+    htmlResults[stepId] = htmlCode;
+    renderResult(stepId, rawText, htmlCode);
+    markSidebarDone(stepId);
+    if(regenBtn) regenBtn.style.display = 'inline-flex';
+  } catch(err) {
+    resultEl.innerHTML = `<div class="alert alert-error">❌ 오류: ${err.message}<br>잠시 후 다시 시도해주세요.</div>`;
+    progEl.style.width = '0%';
+  }
+  btnEl.disabled = false;
+}
+
+function regenerateStep(stepId) {
+  if(confirm('이미 생성된 내용을 다시 생성할까요? 수정한 내용도 초기화돼요.')) generateStep(stepId);
+}
+
+// ============================================================
+// RENDER RESULT
+// ============================================================
+function renderResult(stepId, rawText, htmlCode) {
+  const resultEl = document.getElementById('result-'+stepId);
+  const previewDoc = buildPreviewDoc(htmlCode);
+  resultEl.innerHTML = `
+    <div class="toolbar">
+      <span class="toolbar-label">섹션 편집</span>
+      <button class="btn btn-orange btn-sm" onclick="openEditModal('${stepId}')">✏️ 수정하기</button>
+      <button class="btn btn-secondary btn-sm" onclick="regenerateStep('${stepId}')">🔄 다시 생성</button>
+      <div class="toolbar-sep"></div>
+      <span class="toolbar-label">삽입</span>
+      <button class="btn btn-blue btn-sm" onclick="openImageModal('${stepId}')">🖼️ 이미지 삽입</button>
+      <button class="btn btn-blue btn-sm" onclick="openLinkModal('${stepId}')">🔗 링크 삽입</button>
+      <button class="btn btn-sm" style="background:#7b1fa2;color:white" onclick="openSnippetModal('${stepId}')">🧩 HTML 삽입</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn btn-sm" style="background:#f5f5f5;border:1px solid var(--border)" onclick="copyHTMLStep('${stepId}')">📋 HTML 복사</button>
+    </div>
+    <div class="result-box">
+      <div class="result-header">
+        <div class="result-title">생성 결과</div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <div class="result-tabs" id="tabs-${stepId}">
+            <button class="tab-btn active" onclick="switchTab('${stepId}','preview')">미리보기</button>
+            <button class="tab-btn" onclick="switchTab('${stepId}','code')">HTML 코드</button>
+            <button class="tab-btn" onclick="switchTab('${stepId}','raw')">전체 응답</button>
+          </div>
+        </div>
+      </div>
+      <div class="result-content">
+        <div id="tab-preview-${stepId}">
+          ${htmlCode
+            ? `<iframe class="preview-frame" id="iframe-${stepId}" style="height:460px"></iframe>`
+            : '<div class="alert alert-warn" style="margin:12px">HTML 코드 블록을 찾지 못했어요. 전체 응답 탭에서 확인해주세요.</div>'}
+        </div>
+        <div id="tab-code-${stepId}" style="display:none"><div class="code-view" id="codeview-${stepId}">${escHtml(htmlCode||'(HTML 없음)')}</div></div>
+        <div id="tab-raw-${stepId}" style="display:none"><div class="code-view">${escHtml(rawText)}</div></div>
+      </div>
+    </div>
+    <div class="alert alert-success">✅ 생성 완료! 툴바에서 수정·이미지·링크 삽입이 가능해요.</div>
+  `;
+  // innerHTML 삽입 후 iframe에 blob URL로 렌더링
+  if(htmlCode) {
+    const iframe = document.getElementById('iframe-'+stepId);
+    writeIframe(iframe, htmlCode);
+  }
+}
+
+function buildPreviewDoc(htmlCode) {
+  return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">' +
+    '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">' +
+    '<style>body{margin:20px;background:#fff;font-family:\'Noto Sans KR\',sans-serif}img{max-width:100%}</style>' +
+    '</head><body>' + (htmlCode || '') + '</body></html>';
+}
+
+// srcdoc 방식으로 iframe에 안전하게 렌더링 (blob URL 차단 문제 방지)
+function writeIframe(iframe, htmlCode) {
+  if(!iframe) return;
+  const doc = buildPreviewDoc(htmlCode);
+  iframe.srcdoc = doc;
+}
+
+function refreshPreview(stepId) {
+  const iframe = document.getElementById('iframe-'+stepId);
+  if(iframe) writeIframe(iframe, htmlResults[stepId]||'');
+  const codeView = document.getElementById('codeview-'+stepId);
+  if(codeView) codeView.textContent = htmlResults[stepId]||'';
+}
+
+function switchTab(stepId, tab) {
+  ['preview','code','raw'].forEach(t => {
+    const el = document.getElementById('tab-'+t+'-'+stepId);
+    if(el) el.style.display = t===tab ? 'block' : 'none';
+  });
+  const tabs = document.getElementById('tabs-'+stepId);
+  if(tabs) tabs.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['preview','code','raw'][i]===tab);
+  });
+}
+
+// ============================================================
+// COPY HTML
+// ============================================================
+function copyHTMLStep(stepId) {
+  const html = htmlResults[stepId] || '';
+  if(!html) { showToast('⚠️ 복사할 HTML이 없어요. 먼저 생성해주세요.'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(html).then(() => showToast('✅ HTML이 클립보드에 복사됐어요!')).catch(() => copyFallback(html));
+  } else copyFallback(html);
+}
+
+function copyFallback(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); showToast('✅ HTML이 클립보드에 복사됐어요!'); }
+  catch(e) { showToast('❌ 복사 실패. 코드 탭에서 직접 선택해주세요.'); }
+  document.body.removeChild(ta);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(name) { document.getElementById('modal-'+name).classList.add('open'); }
+function closeModal(name) { document.getElementById('modal-'+name).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
+});
+
+// ============================================================
+// EDIT MODAL
+// ============================================================
+let editPreviewTimer = null;
+
+function switchEditTab(tab) {
+  const codeTab = document.getElementById('edit-tab-code');
+  const previewTab = document.getElementById('edit-tab-preview');
+  const codeBtn = document.getElementById('edit-tab-code-btn');
+  const previewBtn = document.getElementById('edit-tab-preview-btn');
+  if(tab === 'code') {
+    codeTab.style.display = 'block'; previewTab.style.display = 'none';
+    codeBtn.style.background = '#e8f5e9'; codeBtn.style.color = '#2e7d32'; codeBtn.style.fontWeight = '700';
+    previewBtn.style.background = 'white'; previewBtn.style.color = 'var(--muted)'; previewBtn.style.fontWeight = '600';
+  } else {
+    updateEditPreview();
+    codeTab.style.display = 'none'; previewTab.style.display = 'block';
+    codeBtn.style.background = 'white'; codeBtn.style.color = 'var(--muted)'; codeBtn.style.fontWeight = '600';
+    previewBtn.style.background = '#e8f5e9'; previewBtn.style.color = '#2e7d32'; previewBtn.style.fontWeight = '700';
+  }
+}
+
+function updateEditPreview() {
+  const html = document.getElementById('edit-textarea').value;
+  const iframe = document.getElementById('edit-preview-iframe');
+  if(iframe) writeIframe(iframe, html);
+}
+
+function scheduleEditPreview() {
+  clearTimeout(editPreviewTimer);
+  editPreviewTimer = setTimeout(updateEditPreview, 800);
+}
+
+function openEditModal(stepId) {
+  if(!htmlResults[stepId]) { showToast('⚠️ 먼저 섹션을 생성해주세요.'); return; }
+  currentEditStep = stepId;
+  document.getElementById('edit-textarea').value = htmlResults[stepId];
+  document.getElementById('edit-ask-input').value = '';
+  document.getElementById('edit-ref-text').value = '';
+  document.getElementById('edit-ask-result').style.display = 'none';
+  document.getElementById('edit-apply-btn').style.display = 'none';
+  document.getElementById('edit-loading').style.display = 'none';
+  aiEditResult = null;
+  switchEditTab('code');
+  updateEditPreview();
+  openModal('edit');
+}
+
+async function askAIEdit() {
+  const refText = document.getElementById('edit-ref-text').value.trim();
+  const ask = document.getElementById('edit-ask-input').value.trim();
+  if(!refText) { showToast('⚠️ 참고 글을 먼저 붙여넣어주세요.'); return; }
+  const currentHTML = document.getElementById('edit-textarea').value;
+  document.getElementById('edit-loading').style.display = 'flex';
+  document.getElementById('edit-ask-result').style.display = 'none';
+  document.getElementById('edit-apply-btn').style.display = 'none';
+  document.getElementById('edit-ask-btn').disabled = true;
+  try {
+    const systemExtra = '\n\n역할: 아래 [참고 글]의 내용을 반영하여 [기존 HTML 섹션]을 더 정확하고 풍부하게 재작성하세요.' +
+      '\n규칙:\n- 참고 글의 사실적 정보(수치, 성분, 방법 등)를 섹션에 자연스럽게 통합하세요' +
+      '\n- 기존 섹션의 HTML 구조(팁박스, 경고박스, 표 등)는 그대로 유지하세요' +
+      '\n- 블로그 특유의 친근한 말투(~이에요, ~해요)를 유지하세요' +
+      '\n- 출력은 반드시 ```html ... ``` 블록으로만 하세요';
+    const system = getSystemPrompt() + systemExtra;
+    const userParts = [];
+    userParts.push('[참고 글]\n' + refText);
+    if(ask) userParts.push('[추가 지시사항]\n' + ask);
+    userParts.push('[기존 HTML 섹션]\n```html\n' + currentHTML + '\n```');
+    const rawText = await callClaude(system, userParts.join('\n\n'), 8000);
+    const newHTML = extractHTML(rawText);
+    aiEditResult = newHTML || rawText;
+    const resultEl = document.getElementById('edit-ask-result');
+    resultEl.textContent = newHTML ? '✅ 재작성 완료! "AI 결과 적용" 버튼을 누르면 편집창에 반영돼요.' : rawText;
+    resultEl.style.display = 'block';
+    document.getElementById('edit-apply-btn').style.display = 'inline-flex';
+  } catch(err) {
+    document.getElementById('edit-ask-result').textContent = '❌ 오류: ' + err.message;
+    document.getElementById('edit-ask-result').style.display = 'block';
+  }
+  document.getElementById('edit-loading').style.display = 'none';
+  document.getElementById('edit-ask-btn').disabled = false;
+}
+
+function applyAIEdit() {
+  if(aiEditResult) {
+    document.getElementById('edit-textarea').value = aiEditResult;
+    updateEditPreview();
+    switchEditTab('preview');
+    showToast('✅ AI 재작성 결과가 적용됐어요. 미리보기를 확인하고 저장하세요!');
+  }
+}
+function saveEdit() {
+  if(!currentEditStep) return;
+  const newHTML = document.getElementById('edit-textarea').value.trim();
+  htmlResults[currentEditStep] = newHTML;
+  refreshPreview(currentEditStep);
+  closeModal('edit');
+  showToast('✅ 수정 내용이 저장되고 미리보기에 반영됐어요!');
+}
+
+// ============================================================
+// POSITION PICKER
+// ============================================================
+let imgInsertPoints = [], linkInsertPoints = [];
+let selectedImgInsertIdx = 0, selectedLinkInsertIdx = 0;
+const BLOCK_TAGS = new Set(['div','p','h1','h2','h3','h4','h5','h6','ul','ol','li','table','thead','tbody','tr','blockquote','figure','figcaption','section','article','header','footer','nav']);
+
+function tokenizeHTML(html) {
+  const tokens = []; let i = 0;
+  while(i < html.length) {
+    if(html[i] === '<') {
+      if(html.startsWith('<!--', i)) { const end = html.indexOf('-->', i); const e = end>=0?end+3:html.length; tokens.push({type:'comment',text:html.slice(i,e),start:i,end:e}); i=e; continue; }
+      const closeM = html.slice(i).match(/^<\/([a-zA-Z][a-zA-Z0-9]*)\s*>/);
+      if(closeM) { const end=i+closeM[0].length; tokens.push({type:'close',tag:closeM[1].toLowerCase(),raw:closeM[0],start:i,end}); i=end; continue; }
+      const tagM = html.slice(i).match(/^<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(\/?)>/s);
+      if(tagM) { const end=i+tagM[0].length; const tag=tagM[1].toLowerCase(); const selfClose=tagM[3]==='/'||['br','hr','img','input','meta','link'].includes(tag); tokens.push({type:selfClose?'self':'open',tag,raw:tagM[0],start:i,end}); i=end; continue; }
+      tokens.push({type:'text',text:'<',start:i,end:i+1}); i++; continue;
+    } else { const next=html.indexOf('<',i); const end=next>=0?next:html.length; tokens.push({type:'text',text:html.slice(i,end),start:i,end}); i=end; }
+  }
+  return tokens;
+}
+
+function parseInsertPoints(htmlStr) {
+  const points = [{label:'⬆ 섹션 맨 위',icon:'⬆',typeLabel:'최상단',preview:'',special:'top',depth:0,charPos:0}];
+  const tokens = tokenizeHTML(htmlStr);
+  const tagStack = [], insertPoints = [], tagTexts = new Map();
+  let stackIdCounter = 0;
+  for(let ti=0; ti<tokens.length; ti++) {
+    const tok = tokens[ti];
+    if(tok.type==='open') { if(BLOCK_TAGS.has(tok.tag)) { const sid=stackIdCounter++; tagStack.push({tag:tok.tag,tokenIdx:ti,depth:tagStack.length,sid}); tagTexts.set(sid,''); } }
+    else if(tok.type==='close') {
+      for(let si=tagStack.length-1; si>=0; si--) {
+        if(tagStack[si].tag===tok.tag) {
+          const entry=tagStack.splice(si,1)[0]; const text=(tagTexts.get(entry.sid)||'').replace(/\s+/g,' ').trim().slice(0,50); tagTexts.delete(entry.sid);
+          let icon='📦', typeLabel=entry.tag;
+          if(entry.tag==='h2'){icon='🔷';typeLabel='대제목(H2)';}else if(entry.tag==='h3'){icon='📌';typeLabel='소제목(H3)';}else if(entry.tag==='p'){icon='📝';typeLabel='문단';}else if(entry.tag==='ul'){icon='•';typeLabel='목록';}else if(entry.tag==='table'){icon='📊';typeLabel='표';}
+          insertPoints.push({afterTokenIdx:ti,depth:entry.depth,tag:entry.tag,preview:text,icon,typeLabel,charPos:tok.end}); break;
+        }
+      }
+    } else if(tok.type==='text') { if(tagStack.length>0) { const top=tagStack[tagStack.length-1]; tagTexts.set(top.sid,(tagTexts.get(top.sid)||'')+tok.text); } }
+  }
+  insertPoints.filter(p=>p.depth<=2&&p.tag!=='li'&&p.tag!=='thead'&&p.tag!=='tbody'&&p.tag!=='tr').forEach(p => points.push({label:'',icon:p.icon,typeLabel:p.typeLabel,preview:p.preview,depth:p.depth,charPos:p.charPos,special:null}));
+  points.push({label:'⬇ 섹션 맨 아래',icon:'⬇',typeLabel:'최하단',preview:'',special:'bottom',depth:0,charPos:htmlStr.length});
+  return points;
+}
+
+function renderPosList(containerId, htmlStr, defaultSelect) {
+  const points = parseInsertPoints(htmlStr);
+  const container = document.getElementById(containerId);
+  if(!container) return points;
+  container.innerHTML = points.map((p,i) => {
+    const isSpecial = p.special==='top'||p.special==='bottom';
+    const indent = (p.depth>0&&!isSpecial) ? `padding-left:${12+p.depth*14}px` : '';
+    const sel = defaultSelect>=0 && i===defaultSelect;
+    const depthBar = (p.depth>0&&!isSpecial) ? `<span style="display:inline-block;width:2px;height:14px;background:#ccc;margin-right:6px;vertical-align:middle;border-radius:1px;flex-shrink:0"></span>`.repeat(p.depth) : '';
+    let labelHTML;
+    if(isSpecial) { labelHTML=`<span style="font-size:12px;font-weight:700;color:${sel?'var(--accent)':'var(--ink)'}">${p.icon} ${p.label||p.typeLabel}</span>`; }
+    else { const previewTxt=p.preview?`<span style="color:#aaa;font-size:10px;margin-left:5px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${p.preview}</span>`:''; labelHTML=`${depthBar}<span style="font-size:10px;background:${sel?'#1b5e20':'#e8e8e8'};color:${sel?'white':'#444'};padding:1px 6px;border-radius:3px;font-family:monospace;flex-shrink:0;white-space:nowrap">${p.icon} ${p.typeLabel}</span>${previewTxt}`; }
+    return `<div class="pos-list-item ${sel?'selected':''}" onclick="selectInsertPoint('${containerId}',${i})" style="padding:6px 12px;${indent};border-bottom:1px solid #f3f0ea;cursor:pointer;display:flex;align-items:center;gap:2px;transition:background .1s;min-height:32px;${sel?'background:#e8f5e9;':''}">${labelHTML}</div>`;
+  }).join('');
+  return points;
+}
+
+function selectInsertPoint(containerId, i) {
+  const items = document.querySelectorAll(`#${containerId} .pos-list-item`);
+  items.forEach((el,j) => { const sel=j===i; el.classList.toggle('selected',sel); el.style.background=sel?'#e8f5e9':''; });
+  const isImg = containerId==='img-pos-list';
+  const isSnippet = containerId==='snippet-pos-list';
+  const isLink = containerId==='link-pos-list';
+  if(isImg) selectedImgInsertIdx=i;
+  else if(isSnippet) selectedSnippetInsertIdx=i;
+  else selectedLinkInsertIdx=i;
+  const ctxId = isImg?'img-pos-context':isSnippet?'snippet-pos-context':'link-pos-context';
+  const ctxEl = document.getElementById(ctxId);
+  if(!ctxEl) return;
+  const points = isImg?imgInsertPoints:isSnippet?snippetInsertPoints:linkInsertPoints;
+  const stepId = isImg?currentImageStep:isSnippet?currentSnippetStep:currentLinkStep;
+  const html = (stepId&&htmlResults[stepId])||'';
+  const p = points[i];
+  if(!p||!html) { ctxEl.textContent=''; return; }
+  const pos = p.charPos!==undefined?p.charPos:html.length;
+  const CTX=140, before=html.slice(Math.max(0,pos-CTX),pos), after=html.slice(pos,Math.min(html.length,pos+CTX));
+  function cleanCtx(s){return s.replace(/>\s{2,}</g,'><').replace(/\s+/g,' ').trim();}
+  ctxEl.innerHTML=`<span style="color:#aaa">${escHtml(cleanCtx(before).slice(-80))}</span><span style="background:#ff0;color:#333;padding:0 3px;border-radius:2px;font-weight:700"> ← 여기에 삽입 </span><span style="color:#aaa">${escHtml(cleanCtx(after).slice(0,80))}</span>`;
+  // 섹션 전체 미리보기 탭이 열려있으면 갱신
+  if(isImg) {
+    const fullEl = document.getElementById('img-prev-full');
+    if(fullEl && fullEl.style.display !== 'none') updateImgSectionPreview();
+  } else if(isSnippet) {
+    const fullEl = document.getElementById('snip-prev-full');
+    if(fullEl && fullEl.style.display !== 'none') updateSnippetFullPreview();
+  } else if(isLink) {
+    const fullEl = document.getElementById('link-prev-full-wrap');
+    if(fullEl && fullEl.style.display !== 'none') updateLinkSectionPreview();
+  }
+}
+
+function insertAtPoint(htmlStr, content, points, idx) {
+  const p = points[idx];
+  if(!p) return htmlStr+'\n'+content;
+  const pos = p.charPos!==undefined?p.charPos:htmlStr.length;
+  return htmlStr.slice(0,pos)+'\n'+content+'\n'+htmlStr.slice(pos);
+}
+
+// ============================================================
+// IMAGE MODAL
+// ============================================================
+function openImageModal(stepId) {
+  if(!htmlResults[stepId]) { showToast('⚠️ 먼저 섹션을 생성해주세요.'); return; }
+  currentImageStep = stepId;
+  document.getElementById('img-url').value=''; document.getElementById('img-alt').value=''; document.getElementById('img-caption').value='';
+  document.getElementById('img-preview').style.display='none'; document.getElementById('img-file').value=''; imgBase64=null; selectedImgInsertIdx=0;
+  imgInsertPoints = renderPosList('img-pos-list', htmlResults[stepId], 0);
+  const ctx=document.getElementById('img-pos-context'); if(ctx) ctx.textContent='위치를 선택하면 해당 요소 전후 코드가 표시돼요';
+  // 미리보기 초기화
+  const simpleEl = document.getElementById('img-prev-simple');
+  if(simpleEl) { simpleEl.style.padding='16px'; simpleEl.style.background='#fafafa'; simpleEl.style.display='flex'; simpleEl.innerHTML='<span style="font-size:11.5px;color:var(--muted)">이미지를 선택하면 미리보기가 나타나요</span>'; }
+  const fullEl = document.getElementById('img-prev-full');
+  if(fullEl) fullEl.style.display='none';
+  const simpleBtn = document.getElementById('img-prev-tab-simple');
+  const fullBtn = document.getElementById('img-prev-tab-full');
+  if(simpleBtn) { simpleBtn.style.background='#2e7d32'; simpleBtn.style.color='white'; }
+  if(fullBtn) { fullBtn.style.background='white'; fullBtn.style.color='var(--muted)'; }
+  openModal('image');
+}
+
+function imgFileChange(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{imgBase64=ev.target.result;const prev=document.getElementById('img-preview');prev.src=imgBase64;prev.style.display='block';document.getElementById('img-url').value='';updateImgInsertPreview();};
+  reader.readAsDataURL(file);
+}
+function imgDragOver(e){e.preventDefault();document.getElementById('img-drop').classList.add('drag-over');}
+function imgDrop(e){e.preventDefault();document.getElementById('img-drop').classList.remove('drag-over');const file=e.dataTransfer.files[0];if(file&&file.type.startsWith('image/'))imgFileChange({target:{files:[file]}});}
+function imgUrlPreview(){const url=document.getElementById('img-url').value.trim();const prev=document.getElementById('img-preview');if(url){prev.src=url;prev.style.display='block';imgBase64=null;}else prev.style.display='none';updateImgInsertPreview();}
+
+function switchImgPreviewTab(tab) {
+  const simpleEl = document.getElementById('img-prev-simple');
+  const fullEl = document.getElementById('img-prev-full');
+  const simpleBtn = document.getElementById('img-prev-tab-simple');
+  const fullBtn = document.getElementById('img-prev-tab-full');
+  if(tab === 'simple') {
+    simpleEl.style.display = 'flex'; fullEl.style.display = 'none';
+    simpleBtn.style.background = '#2e7d32'; simpleBtn.style.color = 'white';
+    fullBtn.style.background = 'white'; fullBtn.style.color = 'var(--muted)';
+  } else {
+    simpleEl.style.display = 'none'; fullEl.style.display = 'block';
+    fullBtn.style.background = '#2e7d32'; fullBtn.style.color = 'white';
+    simpleBtn.style.background = 'white'; simpleBtn.style.color = 'var(--muted)';
+    updateImgSectionPreview();
+  }
+}
+
+function updateImgSectionPreview() {
+  const iframe = document.getElementById('img-section-preview-iframe');
+  if(!iframe || !currentImageStep) return;
+  const src = imgBase64 || document.getElementById('img-url').value.trim();
+  if(!src) { writeIframe(iframe, htmlResults[currentImageStep]||''); return; }
+  const alt = document.getElementById('img-alt').value.trim() || '이미지';
+  const caption = document.getElementById('img-caption').value.trim();
+  const align = document.getElementById('img-align').value;
+  const width = document.getElementById('img-width').value;
+  const textAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center';
+  const imgHTML = `<div style="text-align:${textAlign};margin:20px 0;"><img src="${src}" alt="${alt}" style="max-width:${width};height:auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.1)" />${caption?`<div style="font-size:13px;color:#888;margin-top:8px;font-style:italic">${caption}</div>`:''}</div>`;
+  const previewHtml = insertAtPoint(htmlResults[currentImageStep]||'', imgHTML, imgInsertPoints, selectedImgInsertIdx);
+  writeIframe(iframe, previewHtml);
+}
+
+function updateImgInsertPreview() {
+  const previewEl = document.getElementById('img-prev-simple');
+  if(!previewEl) return;
+  const src = imgBase64 || document.getElementById('img-url').value.trim();
+  if(!src) {
+    previewEl.style.padding = '16px';
+    previewEl.innerHTML = '<span style="font-size:11.5px;color:var(--muted)">이미지를 선택하면 미리보기가 나타나요</span>';
+    return;
+  }
+  const alt = document.getElementById('img-alt').value.trim() || '이미지';
+  const caption = document.getElementById('img-caption').value.trim();
+  const align = document.getElementById('img-align').value;
+  const width = document.getElementById('img-width').value;
+  const textAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center';
+  previewEl.style.padding = '12px';
+  previewEl.style.background = '#fff';
+  previewEl.innerHTML = '<div style="text-align:' + textAlign + '">' +
+    '<img src="' + src + '" alt="' + alt + '" style="max-width:' + width + ';height:auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.1)" />' +
+    (caption ? '<div style="font-size:12px;color:#888;margin-top:6px;font-style:italic">' + caption + '</div>' : '') +
+    '</div>';
+  // 섹션 전체 탭이 열려있으면 같이 업데이트
+  const fullEl = document.getElementById('img-prev-full');
+  if(fullEl && fullEl.style.display !== 'none') updateImgSectionPreview();
+}
+
+function insertImage() {
+  const src=imgBase64||document.getElementById('img-url').value.trim();
+  if(!src){showToast('⚠️ 이미지를 업로드하거나 URL을 입력해주세요.');return;}
+  const alt=document.getElementById('img-alt').value.trim()||'이미지';
+  const caption=document.getElementById('img-caption').value.trim();
+  const align=document.getElementById('img-align').value;
+  const width=document.getElementById('img-width').value;
+  const textAlign=align==='left'?'left':align==='right'?'right':'center';
+  const imgHTML=`<div style="text-align:${textAlign};margin:20px 0;"><img src="${src}" alt="${alt}" style="max-width:${width};height:auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.1)" />${caption?`<div style="font-size:13px;color:#888;margin-top:8px;font-style:italic">${caption}</div>`:''}</div>`;
+  htmlResults[currentImageStep]=insertAtPoint(htmlResults[currentImageStep]||'',imgHTML,imgInsertPoints,selectedImgInsertIdx);
+  refreshPreview(currentImageStep); closeModal('image'); showToast('✅ 이미지가 삽입됐어요!');
+}
+
+// ============================================================
+// LINK MODAL
+// ============================================================
+const LINK_STYLES = [
+  {id:'solid',name:'▶ 채운 버튼',desc:'기본 솔리드'},
+  {id:'outline',name:'▷ 아웃라인',desc:'테두리만'},
+  {id:'pill',name:'◉ 둥근 필',desc:'알약형 버튼'},
+  {id:'ghost',name:'○ 고스트',desc:'반투명 배경'},
+  {id:'text',name:'— 텍스트형',desc:'링크 스타일'},
+  {id:'banner',name:'▦ 배너형',desc:'좌우 분리'},
+  {id:'card',name:'▣ 카드형',desc:'그림자 카드'},
+  {id:'arrow',name:'→ 화살표형',desc:'우측 화살표'},
+];
+
+function initLinkStyleGrid() {
+  const grid=document.getElementById('link-style-grid');
+  if(!grid) return;
+  grid.innerHTML=LINK_STYLES.map((s,i)=>`<div class="pos-opt ${i===0?'selected':''}" id="lstyle-${s.id}" onclick="selectLinkStyle('${s.id}')" style="padding:7px 6px;font-size:11px;line-height:1.3"><div style="font-weight:700">${s.name}</div><div style="font-size:9.5px;color:var(--muted)">${s.desc}</div></div>`).join('');
+}
+
+function selectLinkStyle(id) {
+  selectedLinkStyle=id;
+  LINK_STYLES.forEach(s=>{ const el=document.getElementById('lstyle-'+s.id); if(el) el.classList.toggle('selected',s.id===id); });
+  updateLinkPreview();
+}
+
+function openLinkModal(stepId) {
+  if(!htmlResults[stepId]){showToast('⚠️ 먼저 섹션을 생성해주세요.');return;}
+  currentLinkStep=stepId;
+  document.getElementById('link-url').value=''; document.getElementById('link-text').value='';
+  selectedLinkInsertIdx=0;
+  linkInsertPoints=renderPosList('link-pos-list',htmlResults[stepId],0);
+  initLinkStyleGrid(); selectedLinkStyle='solid';
+  const preview=document.getElementById('link-preview');
+  if(preview) preview.innerHTML='<span style="font-size:11px;color:var(--muted)">텍스트와 URL을 입력하면 미리보기가 나타나요</span>';
+  // 탭 초기화
+  const simpleWrap=document.getElementById('link-prev-simple-wrap');
+  const fullWrap=document.getElementById('link-prev-full-wrap');
+  const simpleBtn=document.getElementById('link-prev-tab-simple');
+  const fullBtn=document.getElementById('link-prev-tab-full');
+  if(simpleWrap) simpleWrap.style.display='block';
+  if(fullWrap) fullWrap.style.display='none';
+  if(simpleBtn){simpleBtn.style.background='#1565c0';simpleBtn.style.color='white';}
+  if(fullBtn){fullBtn.style.background='white';fullBtn.style.color='var(--muted)';}
+  openModal('link');
+}
+
+function quickLink(text,url){document.getElementById('link-text').value=text;document.getElementById('link-url').value=url;updateLinkPreview();}
+function addLinkIcon(icon){const el=document.getElementById('link-text');el.value=icon+' '+el.value;updateLinkPreview();}
+
+function updateLinkPreview() {
+  const text=document.getElementById('link-text').value.trim();
+  const url=document.getElementById('link-url').value.trim();
+  const previewEl=document.getElementById('link-preview');
+  if(previewEl) {
+    if(!text&&!url){previewEl.innerHTML='<span style="font-size:11px;color:var(--muted)">텍스트와 URL을 입력하면 미리보기가 나타나요</span>';}
+    else { const mc=(config.colorNum&&COLORS[config.colorNum])?COLORS[config.colorNum].main:'#2e7d32'; previewEl.innerHTML=buildLinkHTML(text||'링크 텍스트',url||'#',selectedLinkStyle,'_blank'); }
+  }
+  // 섹션 전체 탭이 열려있으면 갱신
+  const fullEl = document.getElementById('link-prev-full-wrap');
+  if(fullEl && fullEl.style.display !== 'none') updateLinkSectionPreview();
+}
+
+function buildLinkHTML(text,url,style,target) {
+  const mc=(config.colorNum&&COLORS[config.colorNum])?COLORS[config.colorNum].main:'#2e7d32';
+  const t=target||'_blank';
+  function center(h){return `<div style="margin:16px 0;text-align:center">${h}</div>`;}
+  switch(style){
+    case 'solid': return center(`<a href="${url}" target="${t}" style="display:inline-block;background:${mc};color:white;padding:11px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;font-family:'Noto Sans KR',sans-serif">${text}</a>`);
+    case 'outline': return center(`<a href="${url}" target="${t}" style="display:inline-block;background:white;color:${mc};padding:10px 26px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;border:2px solid ${mc};font-family:'Noto Sans KR',sans-serif">${text}</a>`);
+    case 'pill': return center(`<a href="${url}" target="${t}" style="display:inline-block;background:${mc};color:white;padding:10px 30px;border-radius:50px;text-decoration:none;font-weight:700;font-size:14px;font-family:'Noto Sans KR',sans-serif">${text}</a>`);
+    case 'ghost': return center(`<a href="${url}" target="${t}" style="display:inline-block;background:${mc}18;color:${mc};padding:10px 26px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;border:1.5px solid ${mc}50;font-family:'Noto Sans KR',sans-serif">${text}</a>`);
+    case 'text': return center(`<a href="${url}" target="${t}" style="color:${mc};font-size:14px;font-weight:600;font-family:'Noto Sans KR',sans-serif;text-decoration:none">${text} →</a>`);
+    case 'banner': return `<div style="background:${mc}12;border:1px solid ${mc}35;border-radius:10px;padding:14px 20px;margin:16px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><span style="font-size:14px;font-weight:600;color:#333;font-family:'Noto Sans KR',sans-serif">${text}</span><a href="${url}" target="${t}" style="background:${mc};color:white;padding:8px 18px;border-radius:7px;text-decoration:none;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;white-space:nowrap">바로가기 →</a></div>`;
+    case 'card': return center(`<a href="${url}" target="${t}" style="display:inline-block;background:white;border:1.5px solid ${mc}40;color:${mc};padding:12px 30px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 4px 14px ${mc}20;font-family:'Noto Sans KR',sans-serif">${text}</a>`);
+    case 'arrow': return `<div style="margin:16px 0;text-align:center"><a href="${url}" target="${t}" style="display:inline-flex;align-items:center;gap:8px;background:${mc};color:white;padding:11px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;font-family:'Noto Sans KR',sans-serif">${text}<span style="font-size:18px;line-height:1">→</span></a></div>`;
+    default: return center(`<a href="${url}" target="${t}">${text}</a>`);
+  }
+}
+
+function insertLink() {
+  const text=document.getElementById('link-text').value.trim();
+  const url=document.getElementById('link-url').value.trim();
+  if(!text){showToast('⚠️ 링크 텍스트를 입력해주세요.');return;}
+  if(!url){showToast('⚠️ URL을 입력해주세요.');return;}
+  const target=document.getElementById('link-target').value;
+  const linkHTML=buildLinkHTML(text,url,selectedLinkStyle,target);
+  htmlResults[currentLinkStep]=insertAtPoint(htmlResults[currentLinkStep]||'',linkHTML,linkInsertPoints,selectedLinkInsertIdx);
+  refreshPreview(currentLinkStep); closeModal('link'); showToast('✅ 링크가 삽입됐어요!');
+}
+
+// ============================================================
+// LINK SECTION PREVIEW
+// ============================================================
+let currentLinkPreviewTab = 'simple';
+
+function switchLinkPreviewTab(tab) {
+  currentLinkPreviewTab = tab;
+  const simpleWrap = document.getElementById('link-prev-simple-wrap');
+  const fullWrap = document.getElementById('link-prev-full-wrap');
+  const simpleBtn = document.getElementById('link-prev-tab-simple');
+  const fullBtn = document.getElementById('link-prev-tab-full');
+  if(tab === 'simple') {
+    simpleWrap.style.display = 'block'; fullWrap.style.display = 'none';
+    simpleBtn.style.background = '#1565c0'; simpleBtn.style.color = 'white';
+    fullBtn.style.background = 'white'; fullBtn.style.color = 'var(--muted)';
+  } else {
+    simpleWrap.style.display = 'none'; fullWrap.style.display = 'block';
+    fullBtn.style.background = '#1565c0'; fullBtn.style.color = 'white';
+    simpleBtn.style.background = 'white'; simpleBtn.style.color = 'var(--muted)';
+    updateLinkSectionPreview();
+  }
+}
+
+function updateLinkSectionPreview() {
+  const iframe = document.getElementById('link-section-preview-iframe');
+  if(!iframe || !currentLinkStep) return;
+  const text = document.getElementById('link-text').value.trim();
+  const url = document.getElementById('link-url').value.trim();
+  if(!text && !url) { writeIframe(iframe, htmlResults[currentLinkStep]||''); return; }
+  const target = document.getElementById('link-target').value;
+  const linkHTML = buildLinkHTML(text||'링크 텍스트', url||'#', selectedLinkStyle, target);
+  const previewHtml = insertAtPoint(htmlResults[currentLinkStep]||'', linkHTML, linkInsertPoints, selectedLinkInsertIdx);
+  writeIframe(iframe, previewHtml);
+}
+
+// ============================================================
+// HTML SNIPPET INSERT
+// ============================================================
+let currentSnippetStep = null;
+let snippetInsertPoints = [];
+let selectedSnippetInsertIdx = 0;
+
+const SNIPPET_TEMPLATES = {
+  tip: `<div style="background:#e8f5e9;border-left:4px solid #2e7d32;padding:14px 16px;border-radius:0 8px 8px 0;margin:16px 0;font-family:'Noto Sans KR',sans-serif">
+  <strong style="color:#1b5e20;font-size:14px">💡 알아두면 좋아요</strong>
+  <p style="margin:6px 0 0;color:#2e7d32;font-size:14px;line-height:1.6">여기에 팁 내용을 입력하세요.</p>
+</div>`,
+  warn: `<div style="background:#fff8e1;border-left:4px solid #f9a825;padding:14px 16px;border-radius:0 8px 8px 0;margin:16px 0;font-family:'Noto Sans KR',sans-serif">
+  <strong style="color:#e65100;font-size:14px">⚠️ 주의사항</strong>
+  <p style="margin:6px 0 0;color:#bf360c;font-size:14px;line-height:1.6">여기에 주의 내용을 입력하세요.</p>
+</div>`,
+  product: `<div style="border:1.5px solid #e0e0e0;border-radius:12px;padding:16px 20px;margin:16px 0;display:flex;align-items:center;gap:16px;background:white;font-family:'Noto Sans KR',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+  <div style="font-size:40px">🛒</div>
+  <div style="flex:1">
+    <div style="font-size:16px;font-weight:700;color:#222;margin-bottom:4px">제품명을 입력하세요</div>
+    <div style="font-size:13px;color:#666;margin-bottom:8px">제품 설명을 여기에 입력하세요.</div>
+    <a href="https://example.com" target="_blank" style="display:inline-block;background:#2e7d32;color:white;padding:7px 18px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700">구매하기 →</a>
+  </div>
+</div>`,
+  divider: `<hr style="border:none;border-top:2px dashed #e0e0e0;margin:28px 0;" />`,
+  notice: `<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:14px 20px;margin:16px 0;display:flex;align-items:center;gap:12px;font-family:'Noto Sans KR',sans-serif">
+  <span style="font-size:24px">📢</span>
+  <div>
+    <div style="font-size:14px;font-weight:700;color:#1565c0;margin-bottom:2px">공지 제목을 입력하세요</div>
+    <div style="font-size:13px;color:#1976d2;line-height:1.5">공지 내용을 여기에 입력하세요.</div>
+  </div>
+</div>`,
+  table2: `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-family:'Noto Sans KR',sans-serif;font-size:14px">
+  <thead>
+    <tr style="background:#2e7d32;color:white">
+      <th style="padding:10px 14px;text-align:left;border:1px solid #1b5e20">항목</th>
+      <th style="padding:10px 14px;text-align:left;border:1px solid #1b5e20">내용</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:white"><td style="padding:9px 14px;border:1px solid #e0e0e0">항목 1</td><td style="padding:9px 14px;border:1px solid #e0e0e0">내용 1</td></tr>
+    <tr style="background:#f9f9f9"><td style="padding:9px 14px;border:1px solid #e0e0e0">항목 2</td><td style="padding:9px 14px;border:1px solid #e0e0e0">내용 2</td></tr>
+    <tr style="background:white"><td style="padding:9px 14px;border:1px solid #e0e0e0">항목 3</td><td style="padding:9px 14px;border:1px solid #e0e0e0">내용 3</td></tr>
+  </tbody>
+</table>`
+};
+
+function applySnippetTemplate(key) {
+  const code = SNIPPET_TEMPLATES[key];
+  if(!code) return;
+  document.getElementById('snippet-code').value = code;
+  updateSnippetPreview();
+}
+
+function openSnippetModal(stepId) {
+  if(!htmlResults[stepId]) { showToast('⚠️ 먼저 섹션을 생성해주세요.'); return; }
+  currentSnippetStep = stepId;
+  document.getElementById('snippet-code').value = '';
+  selectedSnippetInsertIdx = 0;
+  snippetInsertPoints = renderPosList('snippet-pos-list', htmlResults[stepId], 0);
+  const ctx = document.getElementById('snippet-pos-context');
+  if(ctx) ctx.textContent = '위치를 선택하면 해당 요소 전후 코드가 표시돼요';
+  // 미리보기 초기화
+  const codeIframe = document.getElementById('snip-code-iframe');
+  if(codeIframe) codeIframe.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:90%;color:#aaa;font-family:sans-serif;font-size:13px">코드를 입력하면 미리보기가 나타나요</body></html>';
+  const fullIframe = document.getElementById('snip-full-iframe');
+  if(fullIframe) writeIframe(fullIframe, htmlResults[stepId]||'');
+  // 탭 초기화
+  switchSnipPreviewTab('code');
+  openModal('htmlsnippet');
+}
+
+function switchSnipPreviewTab(tab) {
+  const codeEl = document.getElementById('snip-prev-code');
+  const fullEl = document.getElementById('snip-prev-full');
+  const codeBtn = document.getElementById('snip-prev-tab-code');
+  const fullBtn = document.getElementById('snip-prev-tab-full');
+  if(tab === 'code') {
+    codeEl.style.display = 'block'; fullEl.style.display = 'none';
+    codeBtn.style.background = '#2e7d32'; codeBtn.style.color = 'white';
+    fullBtn.style.background = 'white'; fullBtn.style.color = 'var(--muted)';
+  } else {
+    codeEl.style.display = 'none'; fullEl.style.display = 'block';
+    fullBtn.style.background = '#2e7d32'; fullBtn.style.color = 'white';
+    codeBtn.style.background = 'white'; codeBtn.style.color = 'var(--muted)';
+    updateSnippetFullPreview();
+  }
+}
+
+function updateSnippetPreview() {
+  const code = document.getElementById('snippet-code').value;
+  const iframe = document.getElementById('snip-code-iframe');
+  if(iframe) writeIframe(iframe, code || '');
+  // 섹션 전체 탭이 열려있으면 같이 갱신
+  const fullEl = document.getElementById('snip-prev-full');
+  if(fullEl && fullEl.style.display !== 'none') updateSnippetFullPreview();
+}
+
+function updateSnippetFullPreview() {
+  const iframe = document.getElementById('snip-full-iframe');
+  if(!iframe || !currentSnippetStep) return;
+  const code = document.getElementById('snippet-code').value;
+  if(!code.trim()) { writeIframe(iframe, htmlResults[currentSnippetStep]||''); return; }
+  const previewHtml = insertAtPoint(htmlResults[currentSnippetStep]||'', code, snippetInsertPoints, selectedSnippetInsertIdx);
+  writeIframe(iframe, previewHtml);
+}
+
+function insertSnippet() {
+  const code = document.getElementById('snippet-code').value.trim();
+  if(!code) { showToast('⚠️ 삽입할 HTML 코드를 입력해주세요.'); return; }
+  htmlResults[currentSnippetStep] = insertAtPoint(htmlResults[currentSnippetStep]||'', code, snippetInsertPoints, selectedSnippetInsertIdx);
+  refreshPreview(currentSnippetStep);
+  closeModal('htmlsnippet');
+  showToast('✅ HTML 코드가 삽입됐어요!');
+}
+
+
+// ============================================================
+// SIDEBAR DONE MARK
+// ============================================================
+function markSidebarDone(stepId) {
+  const btn=document.getElementById('sb-'+stepId); if(btn) btn.classList.add('done');
+  updateCompileChecklist();
+}
+
+// ============================================================
+// COMPILE
+// ============================================================
+function updateCompileChecklist() {
+  const el=document.getElementById('compile-checklist'); if(!el) return;
+  el.innerHTML=STEPS.map(s=>`<div class="compile-item ${htmlResults[s.id]?'done':'missing'}"><span class="compile-label">${s.emoji} ${s.title}</span><span class="compile-status">${htmlResults[s.id]?'✅ 완료':'⏳ 미완성'}</span></div>`).join('');
+}
+
+function compileAll() {
+  updateCompileChecklist();
+  const parts=STEPS.map(s=>htmlResults[s.id]||'').filter(Boolean);
+  if(!parts.length){document.getElementById('compile-result').innerHTML='<div class="alert alert-error">생성된 섹션이 없어요. STEP 1부터 순서대로 생성해주세요.</div>';return;}
+  const fullHtml=`<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${config.ingredient} 효능과 부작용 완벽 정리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>body{margin:0;padding:20px;background:#fafafa}</style>
+</head>
+<body>
+${parts.join('\n\n')}
+</body>
+</html>`;
+  htmlResults['_full']=fullHtml;
+  document.getElementById('compile-result').innerHTML=`
+    <div class="alert alert-success" style="margin-bottom:12px">🎉 총 ${parts.length}개 섹션이 합쳐졌어요!</div>
+    <div class="result-box">
+      <div class="result-header">
+        <div class="result-title">${config.ingredient} 완성 블로그</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" style="background:#f5f5f5;border:1px solid var(--border)" onclick="copyFull()">📋 전체 복사</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadAll()">⬇️ 파일 저장</button>
+        </div>
+      </div>
+      <div class="result-content">
+        <iframe id="compile-preview-iframe" class="preview-frame" style="height:680px"></iframe>
+      </div>
+    </div>`;
+  // srcdoc을 JS로 직접 설정 (속성 인코딩 문제 방지)
+  const compileIframe = document.getElementById('compile-preview-iframe');
+  if(compileIframe) compileIframe.srcdoc = fullHtml;
+}
+
+function copyFull(){const html=htmlResults['_full']||'';if(!html){showToast('⚠️ 먼저 "전체 HTML 합치기"를 눌러주세요.');return;}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(html).then(()=>showToast('✅ 전체 HTML 복사 완료!')).catch(()=>copyFallback(html));else copyFallback(html);}
+
+function downloadAll(){
+  if(!htmlResults['_full']){compileAll();setTimeout(downloadAll,600);return;}
+  const blob=new Blob([htmlResults['_full']],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${config.ingredient||'blog'}-블로그.html`;a.click();
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function esc4attr(str){return str.replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function escHtml(str){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ============================================================
+// INIT
+// ============================================================
+initStepPanels();
+updateCompileChecklist();
+</script>
+</body>
+</html>
