@@ -629,7 +629,7 @@ async function callGemini(system, user, maxTokens=8000) {
   const body = {
     systemInstruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: [{ text: user }] }],
-    tools: [{ googleSearch: {} }],
+    // tools: [{ googleSearch: {} }],
     generationConfig: {
       maxOutputTokens: maxTokens,
       temperature: 0.7
