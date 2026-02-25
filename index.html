@@ -660,16 +660,6 @@ async function callGemini(system, user, maxTokens=8000) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
 }
 
-// 하위 호환: callClaude -> callGemini
-async function callClaude(system, user, maxTokens=8000) {
-  return callGemini(system, user, maxTokens);
-}
-
-function extractHTML(rawText) {
-  const m = rawText.match(/```html\s*([\s\S]*?)```/i);
-  return m ? m[1].trim() : '';
-}
-
 // ============================================================
 // GENERATE STEP
 // ============================================================
